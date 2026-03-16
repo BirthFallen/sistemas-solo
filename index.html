@@ -63,4 +63,127 @@
         }
 
         .quest-container {
-            background: rgba(0,
+            background: rgba(0, 0, 0, 0.6); border-left: 3px solid var(--neon-blue);
+            padding: 15px; margin-bottom: 20px;
+        }
+        .quest-item { display: flex; align-items: center; margin-bottom: 12px; font-size: 0.9rem; transition: 0.3s; }
+        .quest-item input[type="checkbox"] {
+            appearance: none; width: 20px; height: 20px; border: 1px solid var(--neon-blue);
+            margin-right: 12px; cursor: pointer; background: rgba(0, 210, 255, 0.1);
+        }
+        .quest-item input[type="checkbox"]:checked { background: var(--neon-blue); }
+        .quest-item.completed span { text-decoration: line-through; color: #555; text-shadow: none; }
+
+        .inventory-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: 15px; }
+        .slot {
+            aspect-ratio: 1; border: 1px solid #222; background: rgba(0,0,0,0.4);
+            display: flex; align-items: center; justify-content: center; font-size: 1.2rem;
+            transition: transform 0.2s;
+        }
+        .slot.active { border-color: var(--neon-blue); box-shadow: 0 0 10px rgba(0, 210, 255, 0.3); transform: scale(1.05); }
+
+        button {
+            background: none; color: var(--neon-blue); border: 1px solid var(--neon-blue);
+            padding: 15px; width: 100%; font-family: 'Orbitron', sans-serif;
+            font-weight: bold; cursor: pointer; transition: 0.2s;
+        }
+        button:active { transform: scale(0.98); background: rgba(0, 210, 255, 0.2); }
+        button:disabled { color: #333; border-color: #333; }
+    </style>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap" rel="stylesheet">
+</head>
+<body id="main-body">
+
+    <div class="system-panel">
+        <div class="header">Painel do Sistema</div>
+        
+        <div class="status-bar">
+            <span class="xp-label">NÍVEL <span id="lvl">1</span> | XP: <span id="xp-val">0</span>/100</span>
+            <div class="bar-bg"><div id="xp-bar" class="bar-fill"></div></div>
+        </div>
+
+        <div id="quest-list" class="quest-container"></div>
+
+        <button id="finish-btn" onclick="finishDay()" disabled>COLETAR RECOMPENSAS</button>
+
+        <div class="header" style="margin-top: 30px; border-top: 1px solid var(--neon-blue); padding-top: 10px;">Inventário do Monarca</div>
+        <div class="inventory-grid" id="inv"></div>
+    </div>
+
+    <audio id="sound-click" src="https://www.soundjay.com/buttons/sounds/button-50.mp3"></audio>
+    <audio id="sound-level" src="https://www.myinstants.com/media/sounds/level-up-rpg.mp3"></audio>
+
+    <script>
+        const agendaTasks = ["Bloco de Estudos 1", "Bloco de Estudos 2", "Leitura Diária", "Treino Físico", "Revisão da Agenda"];
+        
+        let state = JSON.parse(localStorage.getItem('solo_v4')) || {
+            xp: 0, lvl: 1, streak: 0, lastDate: null
+        };
+
+        function playSound(id) {
+            const sound = document.getElementById(id);
+            sound.currentTime = 0;
+            sound.play().catch(e => console.log("Interação necessária para áudio"));
+        }
+
+        function init() {
+            const list = document.getElementById('quest-list');
+            agendaTasks.forEach((task, i) => {
+                const div = document.createElement('div');
+                div.className = 'quest-item';
+                div.innerHTML = `<input type="checkbox" id="q${i}" onchange="checkTask(this)"> <span>${task}</span>`;
+                list.appendChild(div);
+            });
+            render();
+        }
+
+        function checkTask(cb) {
+            playSound('sound-click');
+            cb.parentElement.classList.toggle('completed', cb.checked);
+            document.getElementById('finish-btn').disabled = !document.querySelectorAll('input:checked').length;
+        }
+
+        function finishDay() {
+            const done = document.querySelectorAll('input:checked').length;
+            let totalXp = done * 20;
+            state.xp += totalXp;
+            state.streak++;
+
+            if (state.xp >= 100) {
+                state.lvl++;
+                state.xp -= 100;
+                levelUpEffect();
+            }
+
+            state.lastDate = new Date().toISOString().split('T')[0];
+            localStorage.setItem('solo_v4', JSON.stringify(state));
+            render();
+            alert(`Sincronização completa. +${totalXp} XP adquirido.`);
+        }
+
+        function levelUpEffect() {
+            playSound('sound-level');
+            document.getElementById('main-body').classList.add('flash-effect');
+            setTimeout(() => document.getElementById('main-body').classList.remove('flash-effect'), 500);
+        }
+
+        function render() {
+            document.getElementById('lvl').innerText = state.lvl;
+            document.getElementById('xp-val').innerText = state.xp;
+            document.getElementById('xp-bar').style.width = state.xp + '%';
+            
+            const inv = document.getElementById('inv');
+            const icons = ['🗡️', '🛡️', '💧', '💍', '📜', '🏹', '🧤', '👞'];
+            inv.innerHTML = '';
+            for(let i=0; i<8; i++) {
+                const slot = document.createElement('div');
+                slot.className = 'slot' + (state.lvl > i ? ' active' : '');
+                slot.innerHTML = state.lvl > i ? icons[i] : '';
+                inv.appendChild(slot);
+            }
+        }
+
+        init();
+    </script>
+</body>
+</html>

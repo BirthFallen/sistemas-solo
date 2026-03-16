@@ -1,228 +1,66 @@
 <!DOCTYPE html>
-<html lang="pt-PT">
+<html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Sistema Solo Leveling</title>
+    <title>Sistema Solo Leveling - Ultimate</title>
     <style>
         :root {
-            --bg-color: #05050a;
-            --panel-bg: rgba(10, 15, 30, 0.9);
+            --bg-color: #020205;
+            --panel-bg: rgba(10, 15, 30, 0.95);
             --neon-blue: #00d2ff;
-            --neon-glow: 0 0 15px rgba(0, 210, 255, 0.6);
+            --neon-glow: 0 0 20px rgba(0, 210, 255, 0.7);
             --text-main: #e0f7fa;
-            --warning-red: #ff3333;
             --xp-color: #2ecc71;
         }
+
+        @keyframes levelUpFlash {
+            0% { background-color: var(--bg-color); }
+            50% { background-color: var(--neon-blue); }
+            100% { background-color: var(--bg-color); }
+        }
+
+        .flash-effect { animation: levelUpFlash 0.5s ease-out; }
 
         body {
             background-color: var(--bg-color);
             color: var(--text-main);
-            font-family: 'Orbitron', sans-serif; /* Fonte futurista */
-            margin: 0;
-            padding: 10px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
+            font-family: 'Orbitron', sans-serif;
+            margin: 0; padding: 10px;
+            display: flex; flex-direction: column; align-items: center;
             min-height: 100vh;
-            background-image: radial-gradient(circle at center, #0a1128 0%, #000000 100%);
+            overflow-x: hidden;
+            transition: background-color 0.3s;
         }
 
         .system-panel {
             background-color: var(--panel-bg);
             border: 2px solid var(--neon-blue);
-            border-radius: 5px;
             box-shadow: var(--neon-glow);
-            width: 100%;
-            max-width: 380px;
-            padding: 15px;
-            box-sizing: border-box;
+            width: 100%; max-width: 380px;
+            padding: 20px; box-sizing: border-box;
             backdrop-filter: blur(10px);
-            margin-top: 20px;
+            position: relative;
         }
 
         .header {
-            color: var(--neon-blue);
-            font-size: 0.9rem;
-            text-align: center;
-            letter-spacing: 3px;
-            border-bottom: 1px solid var(--neon-blue);
-            padding-bottom: 5px;
-            margin-bottom: 15px;
+            color: var(--neon-blue); font-size: 0.8rem; text-align: center;
+            letter-spacing: 4px; border-bottom: 1px solid var(--neon-blue);
+            padding-bottom: 8px; margin-bottom: 20px; text-transform: uppercase;
         }
 
-        /* Barra de XP */
-        .status-section { margin-bottom: 20px; }
-        .label { font-size: 0.8rem; color: var(--neon-blue); margin-bottom: 5px; display: block; }
+        .status-bar { margin-bottom: 25px; }
+        .xp-label { font-size: 0.7rem; color: var(--neon-blue); margin-bottom: 5px; display: block; }
         
-        .xp-bar-bg {
-            background: rgba(255,255,255,0.1);
-            height: 12px;
-            border-radius: 6px;
-            overflow: hidden;
-            border: 1px solid var(--neon-blue);
+        .bar-bg {
+            background: rgba(255,255,255,0.05); height: 10px;
+            border-radius: 5px; border: 1px solid var(--neon-blue); overflow: hidden;
         }
-        .xp-bar-fill {
-            background: var(--xp-color);
-            height: 100%;
-            width: 0%;
-            transition: width 0.5s ease;
+        .bar-fill {
+            background: var(--xp-color); height: 100%; width: 0%;
+            transition: width 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275);
             box-shadow: 0 0 10px var(--xp-color);
         }
 
-        .quest-list {
-            background: rgba(0, 0, 0, 0.5);
-            padding: 12px;
-            border-radius: 3px;
-            font-size: 0.9rem;
-            border-left: 2px solid var(--neon-blue);
-            margin-bottom: 20px;
-        }
-
-        /* Inventário */
-        .inventory {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 8px;
-            margin-top: 15px;
-        }
-        .inv-slot {
-            aspect-ratio: 1;
-            background: rgba(0,0,0,0.6);
-            border: 1px solid #333;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.2rem;
-            position: relative;
-        }
-        .inv-slot.active { border-color: var(--neon-blue); box-shadow: 0 0 5px var(--neon-blue); }
-
-        button {
-            background: none;
-            color: var(--neon-blue);
-            border: 1px solid var(--neon-blue);
-            padding: 12px;
-            width: 100%;
-            font-weight: bold;
-            text-transform: uppercase;
-            cursor: pointer;
-            transition: 0.3s;
-        }
-        button:active { background: var(--neon-blue); color: #000; }
-        button:disabled { border-color: #444; color: #444; }
-
-        .streak-info { text-align: center; margin: 15px 0; font-size: 1.2rem; }
-        #streak-num { color: var(--neon-blue); font-weight: bold; text-shadow: var(--neon-glow); }
-    </style>
-    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap" rel="stylesheet">
-</head>
-<body>
-
-    <div class="system-panel">
-        <div class="header">STATUS DO JOGADOR</div>
-        
-        <div class="status-section">
-            <span class="label">NÍVEL: <span id="lvl-text">1</span></span>
-            <div class="xp-bar-bg"><div id="xp-fill" class="xp-bar-fill"></div></div>
-            <center style="font-size: 0.7rem; margin-top: 5px;">XP: <span id="xp-text">0</span> / 100</center>
-        </div>
-
-        <div class="quest-list">
-            <b>MISSÃO DIÁRIA:</b><br>
-            • 100 Flexões [ ]<br>
-            • 100 Abdominais [ ]<br>
-            • 10km Corrida [ ]
-        </div>
-
-        <div class="streak-info">SEQUÊNCIA: <span id="streak-num">0</span> DIAS</div>
-
-        <button id="btn-complete" onclick="completeQuest()">CONCLUIR MISSÃO</button>
-
-        <div class="header" style="margin-top: 25px; border-top: 1px solid var(--neon-blue);">INVENTÁRIO</div>
-        <div class="inventory" id="inventory-grid">
-            </div>
-    </div>
-
-    <script>
-        // Dados do Jogador
-        let stats = JSON.parse(localStorage.getItem('solo_stats')) || {
-            streak: 0,
-            xp: 0,
-            lvl: 1,
-            lastDate: null,
-            inventory: []
-        };
-
-        const items = [
-            { req: 1, icon: '💧', name: 'Poção de Fadiga' },
-            { req: 3, icon: '🗡️', name: 'Espada de Aprendiz' },
-            { req: 7, icon: '🛡️', name: 'Armadura de Ferro' },
-            { req: 15, icon: '💍', name: 'Anel do Monarca' }
-        ];
-
-        function updateUI() {
-            document.getElementById('streak-num').innerText = stats.streak;
-            document.getElementById('lvl-text').innerText = stats.lvl;
-            document.getElementById('xp-text').innerText = stats.xp;
-            document.getElementById('xp-fill').style.width = stats.xp + '%';
-            
-            // Atualizar Inventário
-            const grid = document.getElementById('inventory-grid');
-            grid.innerHTML = '';
-            for(let i=0; i<8; i++) {
-                const slot = document.createElement('div');
-                slot.className = 'inv-slot';
-                if(items[i] && stats.streak >= items[i].req) {
-                    slot.innerHTML = items[i].icon;
-                    slot.className += ' active';
-                    slot.title = items[i].name;
-                }
-                grid.appendChild(slot);
-            }
-
-            checkDate();
-        }
-
-        function checkDate() {
-            if(!stats.lastDate) return;
-            
-            const today = new Date().setHours(0,0,0,0);
-            const last = new Date(stats.lastDate).setHours(0,0,0,0);
-            const diff = (today - last) / (1000 * 60 * 60 * 24);
-
-            if(diff === 0) {
-                document.getElementById('btn-complete').disabled = true;
-                document.getElementById('btn-complete').innerText = "CONCLUÍDO";
-            } else if(diff > 1) {
-                stats.streak = 0;
-                stats.xp = 0;
-                alert("MISSÃO FALHOU! O Sistema resetou o seu progresso.");
-                save();
-            }
-        }
-
-        function completeQuest() {
-            stats.streak++;
-            stats.xp += 20; // 20 XP por dia
-
-            if(stats.xp >= 100) {
-                stats.lvl++;
-                stats.xp = 0;
-                alert("LEVEL UP! Estás a tornar-te mais forte.");
-            }
-
-            stats.lastDate = new Date().toISOString().split('T')[0];
-            save();
-            updateUI();
-        }
-
-        function save() {
-            localStorage.setItem('solo_stats', JSON.stringify(stats));
-        }
-
-        // Inicializar
-        updateUI();
-    </script>
-</body>
-</html>
+        .quest-container {
+            background: rgba(0,
